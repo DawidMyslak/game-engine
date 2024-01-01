@@ -4,78 +4,56 @@ const gameEngine = {
      * Create canvas and context
      */
 
-    const canvas = document.getElementById(options.id);
-    if (!canvas) return;
+    const canvasElement = document.getElementById(options.id);
+    if (!canvasElement) return;
 
-    const ctx = canvas.getContext("2d");
+    const ctx = canvasElement.getContext("2d");
 
-    canvas.width = options.width;
-    canvas.height = options.height;
+    canvasElement.width = options.width;
+    canvasElement.height = options.height;
 
-    function clearCanvas() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
+    const canvas = {
+      clear: () => {
+        ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+      },
+      drawSprite: (sprite, position) => {
+        ctx.drawImage(sprite, position.x, position.y);
+      },
+      drawObject: (object) => {
+        ctx.drawImage(object.sprite, object.x, object.y);
+      },
+    };
 
     /*
      * Load and cache sprite images
      */
 
-    const loadedSprites = {};
+    const cachedSprites = {};
 
-    async function loadSprite(src) {
-      if (!loadedSprites[src]) {
-        loadedSprites[src] = new Promise((resolve, reject) => {
-          const sprite = new Image();
-          sprite.src = src;
-          sprite.onload = () => resolve(sprite);
-          sprite.onerror = reject;
-        });
-      }
+    const content = {
+      loadSprite: async (src) => {
+        if (!cachedSprites[src]) {
+          cachedSprites[src] = new Promise((resolve, reject) => {
+            const sprite = new Image();
+            sprite.src = src;
+            sprite.onload = () => resolve(sprite);
+            sprite.onerror = reject;
+          });
+        }
 
-      return loadedSprites[src];
-    }
-
-    function drawSprite(sprite, position) {
-      ctx.drawImage(sprite, position.x, position.y);
-    }
-
-    /*
-     * Objects helpers
-     */
-
-    let nextObjectId = 0;
-
-    function createObject(sprite, position) {
-      nextObjectId += 1;
-
-      return {
-        id: nextObjectId,
-        sprite,
-        x: position.x,
-        y: position.y,
-        width: sprite.width,
-        height: sprite.height,
-      };
-    }
-
-    function drawObject(object) {
-      ctx.drawImage(object.sprite, object.x, object.y);
-    }
-
-    function areObjectsInCollision(object1, object2) {
-      return (
-        object1.x < object2.x + object2.width &&
-        object1.x + object1.width > object2.x &&
-        object1.y < object2.y + object2.height &&
-        object1.y + object1.height > object2.y
-      );
-    }
+        return cachedSprites[src];
+      },
+    };
 
     /*
      * Keyboard state
      */
 
     let keys = {};
+
+    const keyboard = {
+      isKeyDown: (keyCode) => !!keys[keyCode],
+    };
 
     window.addEventListener("keydown", (e) => {
       keys[e.key] = true;
@@ -96,13 +74,13 @@ const gameEngine = {
      */
 
     function runGameLoop() {
-      if (onUpdateCallback) onUpdateCallback();
-      if (onDrawCallback) onDrawCallback();
+      if (onUpdateCallback) onUpdateCallback(keyboard);
+      if (onDrawCallback) onDrawCallback(canvas);
       requestAnimationFrame(runGameLoop);
     }
 
     async function start() {
-      if (onLoadCallback) await onLoadCallback();
+      if (onLoadCallback) await onLoadCallback(content);
       if (onInitCallback) onInitCallback();
       runGameLoop();
     }
@@ -115,15 +93,6 @@ const gameEngine = {
      * Public API interface
      */
     return {
-      clearCanvas,
-      loadSprite,
-      drawSprite,
-      createObject,
-      drawObject,
-      areObjectsInCollision,
-      start,
-      restart,
-      isKeyDown: (keyCode) => !!keys[keyCode],
       onLoad: (callback) => {
         onLoadCallback = callback;
       },
@@ -136,12 +105,31 @@ const gameEngine = {
       onDraw: (callback) => {
         onDrawCallback = callback;
       },
-      renderText: (id, text) => {
-        const element = document.getElementById(id);
-        if (!element) return;
-
-        element.innerHTML = text;
-      },
+      start,
+      restart,
     };
+  },
+  createObject: (sprite, position) => {
+    return {
+      sprite,
+      x: position.x,
+      y: position.y,
+      width: sprite.width,
+      height: sprite.height,
+    };
+  },
+  areObjectsInCollision: (object1, object2) => {
+    return (
+      object1.x < object2.x + object2.width &&
+      object1.x + object1.width > object2.x &&
+      object1.y < object2.y + object2.height &&
+      object1.y + object1.height > object2.y
+    );
+  },
+  renderText: (id, text) => {
+    const element = document.getElementById(id);
+    if (!element) return;
+
+    element.innerHTML = text;
   },
 };

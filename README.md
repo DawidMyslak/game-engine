@@ -25,9 +25,9 @@ Micro-framework for 2D game development in JavaScript
 ### game.js
 
 ```javascript
-const { createGame } = gameEngine;
+const { createGame, createObject, areObjectsInCollision } = gameEngine;
 
-const game = createGame({
+const { onLoad, onInit, onUpdate, onDraw, start, restart } = createGame({
   id: "game",
   width: 800,
   height: 600,
@@ -36,36 +36,35 @@ const game = createGame({
 let playerSprite, wallSprite;
 let player, wall;
 
-game.onLoad(async () => {
-  playerSprite = await game.loadSprite("player.png");
-  wallSprite = await game.loadSprite("wall.png");
+onLoad(async (content) => {
+  playerSprite = await content.loadSprite("player.png");
+  wallSprite = await content.loadSprite("wall.png");
 });
 
-game.onInit(() => {
-  player = game.createObject(playerSprite, { x: 200, y: 0 });
-  wall = game.createObject(wallSprite, { x: 400, y: 0 });
+onInit(() => {
+  player = createObject(playerSprite, { x: 200, y: 0 });
+  wall = createObject(wallSprite, { x: 400, y: 0 });
 });
 
-game.onUpdate(() => {
-  if (game.isKeyDown("ArrowRight")) {
+onUpdate((keyboard) => {
+  if (keyboard.isKeyDown("ArrowRight")) {
     player.x += 1;
   }
 
-  if (game.isKeyDown("ArrowLeft")) {
+  if (keyboard.isKeyDown("ArrowLeft")) {
     player.x -= 1;
   }
 
-  if (game.areObjectsInCollision(player, wall)) {
-    game.restart();
+  if (areObjectsInCollision(player, wall)) {
+    restart();
   }
 });
 
-game.onDraw(() => {
-  game.clearCanvas();
-
-  game.drawObject(player);
-  game.drawObject(wall);
+onDraw((canvas) => {
+  canvas.clear();
+  canvas.drawObject(player);
+  canvas.drawObject(wall);
 });
 
-game.start();
+start();
 ```
